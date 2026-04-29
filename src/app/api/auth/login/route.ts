@@ -27,20 +27,11 @@ export async function POST(
     const snapshot = await db
       .collection('colaboradores')
       .where('email', '==', email)
+      .where('senha', '==', senha)
       .limit(1)
       .get();
 
     if (snapshot.empty) {
-      return NextResponse.json(
-        { error: 'Credenciais inválidas' },
-        { status: 401 }
-      );
-    }
-
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-
-    if (data.senha !== senha) {
       return NextResponse.json(
         { error: 'Credenciais inválidas' },
         { status: 401 }
