@@ -3,6 +3,13 @@ import { JwtPayload } from '@/types';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+export const AGENT_USER = {
+  uid:   'm9JrDdYRzmdvxIj759NeEUUZxLJ3',
+  nome:  'Crenorte Agente IA',
+  email: 'crenorteagenteia@crenorte.com.br',
+  papel: 'admin',
+} as const;
+
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 }

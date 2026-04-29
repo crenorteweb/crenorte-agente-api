@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, FieldValue } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
+import { AGENT_USER } from '@/lib/auth';
 import { ContatoBody, ContatoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
@@ -65,8 +66,8 @@ export async function POST(
         canal,
         status,
         mensagemEnviada,
-        porUid: user.uid,
-        porNome: user.nome,
+        porUid: AGENT_USER.uid,
+        porNome: AGENT_USER.nome,
         em: FieldValue.serverTimestamp(),
       },
       atualizadoEm: FieldValue.serverTimestamp(),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, FieldValue } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
+import { AGENT_USER } from '@/lib/auth';
 import { EncaminhamentoBody, EncaminhamentoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
@@ -65,7 +66,7 @@ export async function POST(
           destinatarioUid: assessorUid,
           alocadoParaUid: assessorUid,
           alocadoParaNome: assessorNome,
-          analistaId: user.uid,
+          analistaId: AGENT_USER.uid,
           atualizadoEm: FieldValue.serverTimestamp(),
         },
         { merge: true }

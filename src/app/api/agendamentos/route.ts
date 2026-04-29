@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, FieldValue, Timestamp } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
+import { AGENT_USER } from '@/lib/auth';
 import { AgendamentoBody, AgendamentoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
@@ -79,7 +80,7 @@ export async function POST(
       dataHora,
       assessorUid,
       assessorNome,
-      createdByUid: user.uid,
+      createdByUid: AGENT_USER.uid,
       status: 'agendado',
       createdAt: FieldValue.serverTimestamp(),
     });
