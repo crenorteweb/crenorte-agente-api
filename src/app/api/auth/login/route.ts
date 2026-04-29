@@ -38,6 +38,9 @@ export async function POST(
       );
     }
 
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+
     const uid = doc.id;
     const nome: string = data.nome ?? '';
     const papel: string = data.papel ?? '';

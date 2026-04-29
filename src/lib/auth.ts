@@ -11,11 +11,11 @@ export const AGENT_USER = {
 } as const;
 
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: '8h' });
 }
 
 export function verifyToken(token: string): JwtPayload {
-  const decoded = jwt.verify(token, JWT_SECRET);
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!);
   if (typeof decoded === 'string') {
     throw new Error('Token inválido');
   }
