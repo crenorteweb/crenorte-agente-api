@@ -9,8 +9,6 @@ export async function POST(
 ): Promise<NextResponse<EncaminhamentoResponse | ErrorResponse>> {
   const auth = authenticate(request);
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
-
   let body: EncaminhamentoBody;
   try {
     body = await request.json();
@@ -18,19 +16,19 @@ export async function POST(
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { preCadastroId, assessorUid } = body;
+  const { cpf, assessorUid } = body;
 
-  if (!preCadastroId || !assessorUid) {
+  if (!cpf || !assessorUid) {
     return NextResponse.json(
-      { error: 'preCadastroId e assessorUid são obrigatórios' },
+      { error: 'cpf e assessorUid são obrigatórios' },
       { status: 400 }
     );
   }
 
   try {
-    const [assessorDoc, preCadastroDoc] = await Promise.all([
+    const [assessorDoc, preCadastroSnapshot] = await Promise.all([
       db.collection('colaboradores').doc(assessorUid).get(),
-      db.collection('pre_cadastros').doc(preCadastroId).get(),
+      db.collection('pre_cadastros').where('cpf', '==', cpf).limit(1).get(),
     ]);
 
     if (!assessorDoc.exists) {
@@ -40,15 +38,17 @@ export async function POST(
       );
     }
 
-    if (!preCadastroDoc.exists) {
+    if (preCadastroSnapshot.empty) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
       );
     }
 
+    const preCadastroDoc = preCadastroSnapshot.docs[0];
+    const preCadastroId = preCadastroDoc.id;
     const assessorNome: string = assessorDoc.data()?.nome ?? '';
-    const preCadastroData = preCadastroDoc.data()!;
+    const preCadastroData = preCadastroDoc.data();
     const now = new Date().toISOString();
 
     await Promise.all([

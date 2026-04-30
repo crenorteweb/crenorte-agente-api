@@ -9,8 +9,6 @@ export async function POST(
 ): Promise<NextResponse<AgendamentoResponse | ErrorResponse>> {
   const auth = authenticate(request);
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
-
   let body: AgendamentoBody;
   try {
     body = await request.json();
@@ -18,11 +16,11 @@ export async function POST(
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { preCadastroId, assessorUid, data, hora } = body;
+  const { cpf, assessorUid, data, hora } = body;
 
-  if (!preCadastroId || !assessorUid || !data || !hora) {
+  if (!cpf || !assessorUid || !data || !hora) {
     return NextResponse.json(
-      { error: 'preCadastroId, assessorUid, data e hora são obrigatórios' },
+      { error: 'cpf, assessorUid, data e hora são obrigatórios' },
       { status: 400 }
     );
   }
@@ -45,12 +43,12 @@ export async function POST(
   }
 
   try {
-    const [preCadastroDoc, assessorDoc] = await Promise.all([
-      db.collection('pre_cadastros').doc(preCadastroId).get(),
+    const [preCadastroSnapshot, assessorDoc] = await Promise.all([
+      db.collection('pre_cadastros').where('cpf', '==', cpf).limit(1).get(),
       db.collection('colaboradores').doc(assessorUid).get(),
     ]);
 
-    if (!preCadastroDoc.exists) {
+    if (preCadastroSnapshot.empty) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
@@ -64,7 +62,9 @@ export async function POST(
       );
     }
 
-    const cliente = preCadastroDoc.data()!;
+    const preCadastroDoc = preCadastroSnapshot.docs[0];
+    const preCadastroId = preCadastroDoc.id;
+    const cliente = preCadastroDoc.data();
     const assessorNome: string = assessorDoc.data()?.nome ?? '';
     const dataHora = Timestamp.fromDate(new Date(`${data}T${hora}`));
     const now = new Date().toISOString();
