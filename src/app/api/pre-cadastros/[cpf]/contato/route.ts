@@ -6,13 +6,12 @@ import { ContatoBody, ContatoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { cpf: string } }
 ): Promise<NextResponse<ContatoResponse | ErrorResponse>> {
   const auth = authenticate(request);
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
 
-  const { id } = params;
+  const { cpf } = params;
 
   let body: ContatoBody;
   try {
@@ -48,16 +47,20 @@ export async function POST(
   }
 
   try {
-    const docRef = db.collection('pre_cadastros').doc(id);
-    const doc = await docRef.get();
+    const snapshot = await db
+      .collection('pre_cadastros')
+      .where('cpf', '==', cpf)
+      .limit(1)
+      .get();
 
-    if (!doc.exists) {
+    if (snapshot.empty) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
       );
     }
 
+    const docRef = snapshot.docs[0].ref;
     const timestampMs = Date.now();
     const now = new Date().toISOString();
 
