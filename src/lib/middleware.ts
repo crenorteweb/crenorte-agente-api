@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './auth';
-import { CurrentUser } from '@/types';
+import { CurrentUser, ErrorResponse } from '@/types';
 
 export function authenticate(
   request: NextRequest
-): { user: CurrentUser } | NextResponse {
+): { user: CurrentUser } | NextResponse<ErrorResponse> {
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
