@@ -68,6 +68,24 @@ const spec = {
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
+      Cliente: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          nomeCompleto: { type: 'string' },
+          cpf: { type: 'string' },
+          telefone: { type: 'string' },
+          email: { type: 'string' },
+          cidade: { type: 'string' },
+          uf: { type: 'string' },
+          bairro: { type: 'string' },
+          origem: { type: 'string' },
+          aprovacao: { $ref: '#/components/schemas/Aprovacao' },
+          elegivel: { $ref: '#/components/schemas/Elegivel' },
+          atendimento: { $ref: '#/components/schemas/Atendimento' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
       AssessorDisponivel: {
         type: 'object',
         properties: {
@@ -151,12 +169,68 @@ const spec = {
         },
       },
     },
-    '/pre-cadastros/{id}/contato': {
+    '/pre-cadastros/{identifier}': {
+      get: {
+        tags: ['Pre-cadastros'],
+        summary: 'Consulta um cliente pelo CPF ou telefone',
+        parameters: [
+          {
+            name: 'identifier',
+            in: 'path',
+            required: true,
+            description: 'CPF ou telefone do cliente',
+            schema: { type: 'string' },
+            example: '12345678900',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Dados do cliente',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Cliente' },
+                example: {
+                  id: 'abc123xyz',
+                  nomeCompleto: 'João da Silva',
+                  cpf: '12345678900',
+                  telefone: '11999999999',
+                  email: 'joao@email.com',
+                  cidade: 'São Paulo',
+                  uf: 'SP',
+                  bairro: 'Centro',
+                  origem: 'landing_page',
+                  aprovacao: { status: 'apto', motivo: null, observacao: null },
+                  elegivel: { status: 'sim' },
+                  atendimento: {
+                    status: 'realizado',
+                    porUid: 'uid_do_agente',
+                    porNome: 'Maria Agente',
+                    observacao: null,
+                    em: '2026-05-10T14:30:00.000Z',
+                  },
+                  createdAt: '2026-05-08T09:00:00.000Z',
+                },
+              },
+            },
+          },
+          401: { description: 'Não autenticado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Pre-cadastro não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/pre-cadastros/{identifier}/contato': {
       post: {
         tags: ['Pre-cadastros'],
         summary: 'Registra tentativa de contato',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' }, example: 'abc123' },
+          {
+            name: 'identifier',
+            in: 'path',
+            required: true,
+            description: 'CPF ou telefone do cliente',
+            schema: { type: 'string' },
+            example: '12345678900',
+          },
         ],
         requestBody: {
           required: true,
@@ -269,9 +343,10 @@ const spec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['preCadastroId', 'assessorUid'],
+                required: ['assessorUid'],
                 properties: {
-                  preCadastroId: { type: 'string', example: 'abc123' },
+                  cpf: { type: 'string', example: '12345678900', description: 'CPF do cliente (obrigatório se telefone não informado)' },
+                  telefone: { type: 'string', example: '11999999999', description: 'Telefone do cliente (obrigatório se cpf não informado)' },
                   assessorUid: { type: 'string', example: 'uid-assessor-1' },
                 },
               },
@@ -309,9 +384,10 @@ const spec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['preCadastroId', 'assessorUid', 'data', 'hora'],
+                required: ['assessorUid', 'data', 'hora'],
                 properties: {
-                  preCadastroId: { type: 'string', example: 'abc123' },
+                  cpf: { type: 'string', example: '12345678900', description: 'CPF do cliente (obrigatório se telefone não informado)' },
+                  telefone: { type: 'string', example: '11999999999', description: 'Telefone do cliente (obrigatório se cpf não informado)' },
                   assessorUid: { type: 'string', example: 'uid-assessor-1' },
                   data: { type: 'string', format: 'date', example: '2024-01-20' },
                   hora: { type: 'string', example: '14:00' },
