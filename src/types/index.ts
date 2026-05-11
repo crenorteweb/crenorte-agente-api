@@ -63,6 +63,22 @@ export interface PendenteContatoResponse {
   clientes: ClientePendente[];
 }
 
+export interface ClienteResponse {
+  id: string;
+  nomeCompleto: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  cidade: string;
+  uf: string;
+  bairro: string;
+  origem: string;
+  aprovacao: AprovacaoInfo;
+  elegivel: ElegivelInfo;
+  atendimento: AtendimentoInfo | 'sem atendimento realizado';
+  createdAt: string;
+}
+
 // Contato
 export interface ContatoBody {
   canal: 'whatsapp' | 'telefone' | 'email';
