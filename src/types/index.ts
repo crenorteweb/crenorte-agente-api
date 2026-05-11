@@ -91,7 +91,8 @@ export interface AssessoresDisponiveisResponse {
 
 // Encaminhamento
 export interface EncaminhamentoBody {
-  cpf: string;
+  cpf?: string;
+  telefone?: string;
   assessorUid: string;
 }
 
@@ -112,7 +113,8 @@ export interface AgendaResponse {
 
 // Agendamento
 export interface AgendamentoBody {
-  cpf: string;
+  cpf?: string;
+  telefone?: string;
   assessorUid: string;
   data: string;
   hora: string;

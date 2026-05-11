@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, FieldValue, Timestamp } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
 import { AGENT_USER } from '@/lib/auth';
+import { findPreCadastroByCpf, findPreCadastroByTelefone } from '@/lib/pre-cadastros';
 import { AgendamentoBody, AgendamentoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
@@ -16,11 +17,11 @@ export async function POST(
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { cpf, assessorUid, data, hora } = body;
+  const { cpf, telefone, assessorUid, data, hora } = body;
 
-  if (!cpf || !assessorUid || !data || !hora) {
+  if ((!cpf && !telefone) || !assessorUid || !data || !hora) {
     return NextResponse.json(
-      { error: 'cpf, assessorUid, data e hora são obrigatórios' },
+      { error: 'assessorUid, data, hora e ao menos cpf ou telefone são obrigatórios' },
       { status: 400 }
     );
   }
@@ -43,12 +44,12 @@ export async function POST(
   }
 
   try {
-    const [preCadastroSnapshot, assessorDoc] = await Promise.all([
-      db.collection('pre_cadastros').where('cpf', '==', cpf).limit(1).get(),
+    const [preCadastro, assessorDoc] = await Promise.all([
+      cpf ? findPreCadastroByCpf(cpf) : findPreCadastroByTelefone(telefone!),
       db.collection('colaboradores').doc(assessorUid).get(),
     ]);
 
-    if (preCadastroSnapshot.empty) {
+    if (!preCadastro) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
@@ -62,9 +63,8 @@ export async function POST(
       );
     }
 
-    const preCadastroDoc = preCadastroSnapshot.docs[0];
-    const preCadastroId = preCadastroDoc.id;
-    const cliente = preCadastroDoc.data();
+    const preCadastroId = preCadastro.id;
+    const cliente = preCadastro.data;
     const assessorNome: string = assessorDoc.data()?.nome ?? '';
     const dataHora = Timestamp.fromDate(new Date(`${data}T${hora}`));
     const now = new Date().toISOString();
@@ -85,7 +85,7 @@ export async function POST(
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    await db.collection('pre_cadastros').doc(preCadastroId).update({
+    await preCadastro.ref.update({
       agendamentoData: data,
       agendamentoHora: hora,
       agendamentoStatus: 'agendado',

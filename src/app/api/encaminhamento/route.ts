@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, FieldValue } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
 import { AGENT_USER } from '@/lib/auth';
+import { findPreCadastroByCpf, findPreCadastroByTelefone } from '@/lib/pre-cadastros';
 import { EncaminhamentoBody, EncaminhamentoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
@@ -16,19 +17,19 @@ export async function POST(
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { cpf, assessorUid } = body;
+  const { cpf, telefone, assessorUid } = body;
 
-  if (!cpf || !assessorUid) {
+  if ((!cpf && !telefone) || !assessorUid) {
     return NextResponse.json(
-      { error: 'cpf e assessorUid são obrigatórios' },
+      { error: 'assessorUid e ao menos cpf ou telefone são obrigatórios' },
       { status: 400 }
     );
   }
 
   try {
-    const [assessorDoc, preCadastroSnapshot] = await Promise.all([
+    const [assessorDoc, preCadastro] = await Promise.all([
       db.collection('colaboradores').doc(assessorUid).get(),
-      db.collection('pre_cadastros').where('cpf', '==', cpf).limit(1).get(),
+      cpf ? findPreCadastroByCpf(cpf) : findPreCadastroByTelefone(telefone!),
     ]);
 
     if (!assessorDoc.exists) {
@@ -38,21 +39,20 @@ export async function POST(
       );
     }
 
-    if (preCadastroSnapshot.empty) {
+    if (!preCadastro) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
       );
     }
 
-    const preCadastroDoc = preCadastroSnapshot.docs[0];
-    const preCadastroId = preCadastroDoc.id;
+    const preCadastroId = preCadastro.id;
     const assessorNome: string = assessorDoc.data()?.nome ?? '';
-    const preCadastroData = preCadastroDoc.data();
+    const preCadastroData = preCadastro.data;
     const now = new Date().toISOString();
 
     await Promise.all([
-      db.collection('pre_cadastros').doc(preCadastroId).set(
+      preCadastro.ref.set(
         {
           encaminhamento: {
             assessorUid,

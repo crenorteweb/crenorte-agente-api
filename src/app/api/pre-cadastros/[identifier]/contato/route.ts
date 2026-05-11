@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, FieldValue } from '@/lib/firebase';
+import { FieldValue } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
 import { AGENT_USER } from '@/lib/auth';
+import { findPreCadastroByIdentifier } from '@/lib/pre-cadastros';
 import { ContatoBody, ContatoResponse, ErrorResponse } from '@/types';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { cpf: string } }
+  { params }: { params: { identifier: string } }
 ): Promise<NextResponse<ContatoResponse | ErrorResponse>> {
   const auth = authenticate(request);
   if (auth instanceof NextResponse) return auth;
 
-  const { cpf } = params;
+  const { identifier } = params;
 
   let body: ContatoBody;
   try {
@@ -47,24 +48,19 @@ export async function POST(
   }
 
   try {
-    const snapshot = await db
-      .collection('pre_cadastros')
-      .where('cpf', '==', cpf)
-      .limit(1)
-      .get();
+    const preCadastro = await findPreCadastroByIdentifier(identifier);
 
-    if (snapshot.empty) {
+    if (!preCadastro) {
       return NextResponse.json(
         { error: 'Pre-cadastro não encontrado' },
         { status: 404 }
       );
     }
 
-    const docRef = snapshot.docs[0].ref;
     const timestampMs = Date.now();
     const now = new Date().toISOString();
 
-    await docRef.update({
+    await preCadastro.ref.update({
       [`tentativasContato.${timestampMs}`]: {
         canal,
         status,
