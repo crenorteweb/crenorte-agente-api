@@ -16,7 +16,6 @@ export async function GET(
   try {
     let query = db
       .collection('colaboradores')
-      .where('papel', '==', 'assessor')
       .where('status', '==', 'ativo');
 
     const snapshot = await query.get();
