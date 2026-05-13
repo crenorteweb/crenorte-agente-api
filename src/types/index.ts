@@ -96,6 +96,7 @@ export interface ContatoResponse {
 export interface AssessorDisponivel {
   uid: string;
   nome: string;
+  papel: string | null;
   cidade: string | null;
   rota: string | null;
   agendamentosAtivos: number;

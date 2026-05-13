@@ -34,6 +34,7 @@ export async function GET(
       return {
         uid: doc.id,
         nome: d.nome ?? '',
+        papel: d.papel ?? null,
         cidade: d.cidade ?? null,
         rota: d.rota ?? null,
         agendamentosAtivos: d.agendamentosAtivos ?? 0,
