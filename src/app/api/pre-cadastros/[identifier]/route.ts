@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FieldValue } from '@/lib/firebase';
 import { authenticate } from '@/lib/middleware';
-import { findPreCadastroByIdentifier } from '@/lib/pre-cadastros';
-import { ClienteResponse, ErrorResponse } from '@/types';
+import { findPreCadastroByCpf, findPreCadastroByIdentifier } from '@/lib/pre-cadastros';
+import { AtualizarStatusBody, AtualizarStatusResponse, ClienteResponse, ErrorResponse } from '@/types';
 
 export async function GET(
   request: NextRequest,
@@ -60,6 +61,81 @@ export async function GET(
     return NextResponse.json(cliente);
   } catch (err) {
     console.error('[pre-cadastros/get]', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { identifier: string } }
+): Promise<NextResponse<AtualizarStatusResponse | ErrorResponse>> {
+  const auth = authenticate(request);
+  if (auth instanceof NextResponse) return auth;
+
+  const { identifier } = params;
+
+  let body: AtualizarStatusBody;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 });
+  }
+
+  const { aprovacao, elegivel } = body;
+
+  if (!aprovacao && !elegivel) {
+    return NextResponse.json(
+      { error: 'Informe ao menos um campo: aprovacao ou elegivel' },
+      { status: 400 }
+    );
+  }
+
+  const aprovacaoStatusValidos = ['apto', 'inapto'];
+  if (aprovacao && !aprovacaoStatusValidos.includes(aprovacao.status)) {
+    return NextResponse.json(
+      { error: 'aprovacao.status inválido. Use: apto ou inapto' },
+      { status: 400 }
+    );
+  }
+
+  const elegivelStatusValidos = ['sim', 'nao', 'nao_verificado'];
+  if (elegivel && !elegivelStatusValidos.includes(elegivel.status)) {
+    return NextResponse.json(
+      { error: 'elegivel.status inválido. Use: sim, nao ou nao_verificado' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const preCadastro = await findPreCadastroByCpf(identifier);
+
+    if (!preCadastro) {
+      return NextResponse.json(
+        { error: 'Pre-cadastro não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    const updates: Record<string, unknown> = {
+      atualizadoEm: FieldValue.serverTimestamp(),
+    };
+
+    if (aprovacao) {
+      updates['aprovacao.status'] = aprovacao.status;
+      updates['aprovacao.motivo'] = aprovacao.motivo ?? null;
+      updates['aprovacao.observacao'] = aprovacao.observacao ?? null;
+    }
+
+    if (elegivel) {
+      updates['elegivel.status'] = elegivel.status;
+    }
+
+    await preCadastro.ref.update(updates);
+
+    const atualizadoEm = new Date().toISOString();
+    return NextResponse.json({ ok: true, atualizadoEm });
+  } catch (err) {
+    console.error('[pre-cadastros/patch]', err);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
 }

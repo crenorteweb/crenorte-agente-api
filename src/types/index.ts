@@ -79,6 +79,23 @@ export interface ClienteResponse {
   createdAt: string;
 }
 
+// Atualizar status do cliente
+export interface AtualizarStatusBody {
+  aprovacao?: {
+    status: 'apto' | 'inapto';
+    motivo?: string | null;
+    observacao?: string | null;
+  };
+  elegivel?: {
+    status: 'sim' | 'nao' | 'nao_verificado';
+  };
+}
+
+export interface AtualizarStatusResponse {
+  ok: boolean;
+  atualizadoEm: string;
+}
+
 // Contato
 export interface ContatoBody {
   canal: 'whatsapp' | 'telefone' | 'email';
