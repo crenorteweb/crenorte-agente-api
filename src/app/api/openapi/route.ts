@@ -27,12 +27,18 @@ const spec = {
           status: { type: 'string', enum: ['apto', 'inapto'] },
           motivo: { type: 'string', nullable: true },
           observacao: { type: 'string', nullable: true },
+          porUid: { type: 'string', description: 'UID do usuário que registrou a aprovação' },
+          porNome: { type: 'string', description: 'Nome do usuário que registrou a aprovação' },
+          em: { type: 'string', format: 'date-time', description: 'Data e hora em que a aprovação foi registrada' },
         },
       },
       Elegivel: {
         type: 'object',
         properties: {
           status: { type: 'string', enum: ['sim', 'nao', 'nao_verificado'] },
+          porUid: { type: 'string', description: 'UID do usuário que registrou a elegibilidade' },
+          porNome: { type: 'string', description: 'Nome do usuário que registrou a elegibilidade' },
+          em: { type: 'string', format: 'date-time', description: 'Data e hora em que a elegibilidade foi registrada' },
         },
       },
       Atendimento: {
@@ -199,8 +205,20 @@ const spec = {
                   uf: 'SP',
                   bairro: 'Centro',
                   origem: 'landing_page',
-                  aprovacao: { status: 'apto', motivo: null, observacao: null },
-                  elegivel: { status: 'sim' },
+                  aprovacao: {
+                    status: 'apto',
+                    motivo: null,
+                    observacao: null,
+                    porUid: 'uid_do_analista',
+                    porNome: 'Carlos Analista',
+                    em: '2026-05-10T14:30:00.000Z',
+                  },
+                  elegivel: {
+                    status: 'sim',
+                    porUid: 'uid_do_analista',
+                    porNome: 'Carlos Analista',
+                    em: '2026-05-10T14:30:00.000Z',
+                  },
                   atendimento: {
                     status: 'realizado',
                     porUid: 'uid_do_agente',
@@ -213,6 +231,90 @@ const spec = {
               },
             },
           },
+          401: { description: 'Não autenticado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Pre-cadastro não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+      patch: {
+        tags: ['Pre-cadastros'],
+        summary: 'Atualiza status de aprovação e/ou elegibilidade do cliente',
+        description: 'Registra o resultado da análise do cliente. O responsável pela análise é identificado automaticamente pelo token JWT — não é necessário informar no body. Ao menos um dos campos (`aprovacao` ou `elegivel`) deve ser enviado.',
+        parameters: [
+          {
+            name: 'identifier',
+            in: 'path',
+            required: true,
+            description: 'CPF do cliente',
+            schema: { type: 'string' },
+            example: '12345678900',
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  aprovacao: {
+                    type: 'object',
+                    required: ['status'],
+                    properties: {
+                      status: { type: 'string', enum: ['apto', 'inapto'], description: 'Resultado da aprovação' },
+                      motivo: { type: 'string', nullable: true, description: 'Motivo (obrigatório quando inapto)' },
+                      observacao: { type: 'string', nullable: true, description: 'Observação adicional' },
+                    },
+                  },
+                  elegivel: {
+                    type: 'object',
+                    required: ['status'],
+                    properties: {
+                      status: { type: 'string', enum: ['sim', 'nao', 'nao_verificado'], description: 'Resultado da elegibilidade' },
+                    },
+                  },
+                },
+              },
+              examples: {
+                aprovacao_apto: {
+                  summary: 'Aprovar cliente',
+                  value: { aprovacao: { status: 'apto', motivo: null, observacao: null } },
+                },
+                aprovacao_inapto: {
+                  summary: 'Reprovar cliente',
+                  value: { aprovacao: { status: 'inapto', motivo: 'Renda insuficiente', observacao: null } },
+                },
+                elegivel_sim: {
+                  summary: 'Marcar como elegível',
+                  value: { elegivel: { status: 'sim' } },
+                },
+                ambos: {
+                  summary: 'Atualizar aprovação e elegibilidade juntos',
+                  value: {
+                    aprovacao: { status: 'apto', motivo: null, observacao: null },
+                    elegivel: { status: 'sim' },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Análise registrada com sucesso',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    ok: { type: 'boolean' },
+                    atualizadoEm: { type: 'string', format: 'date-time' },
+                  },
+                },
+                example: { ok: true, atualizadoEm: '2026-06-12T10:00:00.000Z' },
+              },
+            },
+          },
+          400: { description: 'Body inválido ou status não reconhecido', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           401: { description: 'Não autenticado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           404: { description: 'Pre-cadastro não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },

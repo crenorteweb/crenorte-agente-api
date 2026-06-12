@@ -28,10 +28,16 @@ export interface AprovacaoInfo {
   status: 'apto' | 'inapto';
   motivo: string | null;
   observacao: string | null;
+  porUid: string;
+  porNome: string;
+  em: string;
 }
 
 export interface ElegivelInfo {
   status: 'sim' | 'nao' | 'nao_verificado';
+  porUid: string;
+  porNome: string;
+  em: string;
 }
 
 export interface AtendimentoInfo {

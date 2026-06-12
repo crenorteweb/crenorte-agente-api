@@ -50,9 +50,15 @@ export async function GET(
         status: d.aprovacao?.status ?? 'inapto',
         motivo: d.aprovacao?.motivo ?? null,
         observacao: d.aprovacao?.observacao ?? null,
+        porUid: d.aprovacao?.porUid ?? '',
+        porNome: d.aprovacao?.porNome ?? '',
+        em: d.aprovacao?.em?.toDate?.()?.toISOString() ?? '',
       },
       elegivel: {
         status: d.elegivel?.status ?? 'nao_verificado',
+        porUid: d.elegivel?.porUid ?? '',
+        porNome: d.elegivel?.porNome ?? '',
+        em: d.elegivel?.em?.toDate?.()?.toISOString() ?? '',
       },
       atendimento,
       createdAt: d.createdAt?.toDate?.()?.toISOString() ?? '',
@@ -116,6 +122,8 @@ export async function PATCH(
       );
     }
 
+    const { user } = auth;
+
     const updates: Record<string, unknown> = {
       atualizadoEm: FieldValue.serverTimestamp(),
     };
@@ -124,10 +132,16 @@ export async function PATCH(
       updates['aprovacao.status'] = aprovacao.status;
       updates['aprovacao.motivo'] = aprovacao.motivo ?? null;
       updates['aprovacao.observacao'] = aprovacao.observacao ?? null;
+      updates['aprovacao.porUid'] = user.uid;
+      updates['aprovacao.porNome'] = user.nome;
+      updates['aprovacao.em'] = FieldValue.serverTimestamp();
     }
 
     if (elegivel) {
       updates['elegivel.status'] = elegivel.status;
+      updates['elegivel.porUid'] = user.uid;
+      updates['elegivel.porNome'] = user.nome;
+      updates['elegivel.em'] = FieldValue.serverTimestamp();
     }
 
     await preCadastro.ref.update(updates);
